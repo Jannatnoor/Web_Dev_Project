@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1">
+
+	<title>Weather Forecast</title>
+
+	<!-- Loading third party fonts -->
+	<link href="http://fonts.googleapis.com/css?family=Roboto:300,400,700|" rel="stylesheet" type="text/css">
+	<link href="fonts/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+	<!-- Loading main css file -->
+	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
+	<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.0.0/css/boxicons.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+	integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
+	crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js"></script>
+</head>
+
+
+<body>
+
+	<div class="site-content">
+		<div class="site-header">
+			<div class="container">
+				<a href="index.html" class="branding">
+					<img src="images/logo.png" alt="" class="logo">
+					<div class="logo-type">
+					</div>
+				</a>
+
+				<!-- Default snippet for navigation -->
+				<div class="main-navigation">
+					<button type="button" class="menu-toggle"><i class="fa fa-bars"></i></button>
+					<ul class="menu">
+						<li class="menu-item current-menu-item"><a href="index.html">Home</a></li>
+						<li class="menu-item"><a href="temprature.html">Temprature</a></li>
+						<li class="menu-item"><a href="multiple.html">Wind Speed</a></li>
+						<li class="menu-item"><a href="v4.html">All Data</a></li>
+					</ul> <!-- .menu -->
+				</div> <!-- .main-navigation -->
+
+				<div class="mobile-navigation"></div>
+
+			</div>
+		</div> <!-- .site-header -->
+		<div class="forecast-table">
+			<div class="container">
+				<h3 class="text-center pt-5">All Measurements (With Intervals)</h3>
+                <div class="row pt-5">
+                    <div class="col-3 form-group">
+                        <label for="inputState">Measurement Type</label>
+                        <select id="m-type" class="form-control">
+                            <option value="wind_speed" selected>wind_speed</option>
+                        </select>
+                  
+                    </div>
+                    <div class="col-lg-3 offset-lg-6 form-group">
+                        <label for="inputState">Time Intervals</label>
+                        <select id="t-type" class="form-control">
+                            <option value="" selected>Now</option>
+                            <option value="24" >24 Hours</option>
+                            <option value="48" >48 Hours</option>
+                            <option value="72" >72 Hours</option>
+                            <option value="168" >1 Week</option>
+                            <option value="730" >1 Month</option>
+                        </select>
+                  
+                    </div>
+                </div>
+                <span>Average Value : <span style="font-weight: bold;" class="avg-value"></span></span>
+				<div class="row py-5">
+					<div class="col-12">
+						<table id="example" class="table table-hover responsive nowrap" style="width:100%">
+							<thead>
+								<tr>
+								<th>ID</th>
+								<th>Date</th>
+                                <th>Time</th>
+                                <th>Wind Speed</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+                <div class="row py-5">
+					<h1>Analysis</h1>
+					<div class="chartjs-wrapper">
+					  <canvas id="linechart" class="chartjs"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+  <footer class="text-center">
+    Tamk Weather Station
+  </footer>
+	<script src="js/jquery-1.11.1.min.js"></script>
+	<script src="js/plugins.js"></script>
+	<script src="js/app.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+	<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+</body>
+
+<script>
+	$(document).ready(function () {
+        Measurement()
+		$("#example").DataTable({
+			aaSorting: [],
+			responsive: true,
+
+			columnDefs: [
+				{
+					responsivePriority: 1,
+					targets: 0
+				},
+				{
+					responsivePriority: 2,
+					targets: -1
+				}
+			]
+		});
+
+		$(".dataTables_filter input")
+			.attr("placeholder", "Search here...")
+			.css({
+				width: "300px",
+				display: "inline-block"
+			});
+
+		$('[data-toggle="tooltip"]').tooltip();
+        
+    function Measurement() {
+        var url = "http://webapi19sa-1.course.tamk.cloud/v1/weather/names"
+        $.ajax({
+            type: 'GET',
+            url: url,
+            contentType: "text/plain",
+            dataType: 'json',
+            success: function (data) {
+                $.map(data, function (value, key) {
+                var div_data="<option value="+value.name+">"+value.name+"</option>";
+                $(div_data).appendTo('#m-type'); 
+                });
+            },
+            error: function (e) {
+                console.log("There was an error with your request...");
+                console.log("error: " + JSON.stringify(e));
+            }
+        });
+    }
+	});
+
+</script>
+<script>
+    $('#m-type').on('change', function (e) {
+    var optionSelected = $("option:selected", this);
+    var valueSelected = this.value;
+    var interval = $('#t-type').find(":selected").val();
+
+    loadData(valueSelected, interval);
+    });
+
+    $('#t-type').on('change', function (e) {
+    var optionSelected = $("option:selected", this);
+    var interval = this.value;
+    var valueSelected = $('#m-type').find(":selected").val();
+
+    loadData(valueSelected, interval);
+    });
+
+    $( document ).ready(function() {
+        var conceptName = $('#m-type').find(":selected").text();
+        loadData(conceptName, val = '');
+    });
+
+    function loadData(conceptName, interval) {
+        $.ajax({
+            type: 'GET',
+            url: "http://webapi19sa-1.course.tamk.cloud/v1/weather/"+conceptName+"/"+interval,
+            contentType: "text/plain",
+            dataType: 'json',
+            success: function (data) {
+                myJsonData = data;
+                populateDataTable(myJsonData, conceptName);
+                Mychart(myJsonData, conceptName)
+            },
+            error: function (e) {
+                console.log("There was an error with your request...");
+                console.log("error: " + JSON.stringify(e));
+            }
+        });
+    }
+    // populate the data table with JSON data
+	function populateDataTable(data,conceptName) {
+        $("#example").DataTable().clear();
+        var id = 0;
+        var avgvalue = 0;
+        var daata = $.map(data, function (value, key) {
+			id++;
+      avgvalue = parseFloat(avgvalue + value[conceptName]).toFixed(2);
+           $('#example thead tr').html("<th>ID</th><th>Date</th><th>Time</th><th>"+conceptName+"</th>");
+            $('#example').dataTable().fnAddData([
+				id,
+                moment(value.date_time).utc().format('MM/DD/YYYY'),
+                moment(value.date_time).utc().format('H:mm'),
+                parseFloat(value[conceptName]).toFixed(2)
+
+            ]);
+            //console.log(value)
+        });
+        $('.avg-value').text(avgvalue)
+
+    }
+
+
+
+</script>
+<script>
+	
+    function Mychart(data, cp){
+    var daata = [];
+    $.map(data, function (value, key) {
+            daata.push( moment(value.date_time).utc().format('MM/DD/YYYY HH:mm'))
+    });
+    var val = [];
+    $.map(data, function (value, key) {
+        v = parseFloat(value[cp]);
+        v = Math.round(v*100)/100;
+        val.push(v)
+    });
+    /*=========================================
+    Line Chart
+    ===========================================*/
+    var ctx = document.getElementById('linechart');
+    
+    var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'line',
+        
+        // The data for our dataset
+        data: {
+            labels: daata,
+            datasets: [
+            {
+              label: "",
+              backgroundColor: 'transparent',
+              borderColor: 'rgb(82, 136, 255)',
+              data: val,
+              lineTension: 0.3,
+              pointRadius: 5,
+              pointBackgroundColor: 'rgba(255,255,255,1)',
+              pointHoverBackgroundColor: 'rgba(255,255,255,0.6)',
+              pointHoverRadius: 10,
+              pointHitRadius: 30,
+              pointBorderWidth: 2,
+              pointStyle: 'rectRounded'
+            }
+          ]
+        },
+        
+        // Configuration options go here
+        options: {
+          legend: {
+             display: false
+           },
+          scales: {
+            xAxes: [{
+              gridLines: {
+                display:false
+              }
+            }],
+            yAxes: [{
+              gridLines: {
+                 display:true
+              },
+           ticks: {
+                callback: function(value) {
+                  var ranges = [
+                    { divider: 1e6, suffix: 'M' },
+                    { divider: 1e3, suffix: 'k' }
+                  ];
+                  function formatNumber(n) {
+                    for (var i = 0; i < ranges.length; i++) {
+                      if (n >= ranges[i].divider) {
+                        return (n / ranges[i].divider).toString() + ranges[i].suffix;
+                      }
+                    }
+                    return n;
+                  }
+                  return '' + formatNumber(value);
+                }
+              },
+           }]
+         },
+         tooltips: {
+          callbacks: {
+            title: function(tooltipItem, data) {
+              return data['labels'][tooltipItem[0]['index']];
+            },
+            label: function(tooltipItem, data) {
+              return  '' + data['datasets'][0]['data'][tooltipItem['index']];
+            },
+          },
+          backgroundColor: '#606060',
+          titleFontSize: 14,
+          titleFontColor: '#ffffff',
+          bodyFontColor: '#ffffff',
+          bodyFontSize: 18,
+          displayColors: false
+        }
+      }
+    });
+    }
+    
+    </script>
+
+</html>
